@@ -16,4 +16,10 @@ bad = [f for f in figs if not os.path.exists(os.path.join(root, "img", f + ".web
 assert not bad, f"article figures missing or without source: {bad}"
 for faq in ["articles/faq/bv_img14", "articles/faq/bv_img15"]:
     assert os.path.exists(os.path.join(root, "img", faq + ".webp")) and faq in src, faq
+# every file in img/ must be shown somewhere (no forgotten or hidden photos left behind)
+used = {f"img/{d['id']}/{p[0]}.webp" for d in data["designs"] for p in d["photos"]} | {f"img/{d['id']}/{d['layout']}.webp" for d in data["designs"] if d.get("layout")}
+used |= {f"img/{f}.webp" for f in figs} | set(re.findall(r'img/[\w./-]+\.webp', open(os.path.join(root, "index.html")).read()))
+on_disk = {os.path.relpath(os.path.join(r, f), root) for r, _, fs in os.walk(os.path.join(root, "img")) for f in fs}
+assert not on_disk - used, f"files in img/ that the site never shows: {sorted(on_disk - used)}"
+assert not used - on_disk, f"images the site shows but img/ lacks: {sorted(used - on_disk)}"
 print(f"ok: {len(ids)} designs, {sum(len(d['photos']) for d in data['designs'])} photos, {len(data.get('articles', []))} articles, {len(set(figs))} article figures")
